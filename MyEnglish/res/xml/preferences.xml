@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:title="标题"
+	android:summary="说明摘要">
+	
+    <ListPreference
+        android:key="prefix"
+        android:title="@string/pref_Type"
+        android:summary="选择Advanced还是Studio Classroom"
+        android:dialogTitle="请选择"
+        android:entries="@array/pref_type_entries"
+        android:entryValues="@array/pref_type_values"
+        android:defaultValue="@string/pref_type_default" />
+
+</PreferenceScreen>

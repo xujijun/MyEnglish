@@ -1,0 +1,322 @@
+package com.xjj.myEnglish;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import com.xjj.myEnglish.R;
+
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.preference.PreferenceManager;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.text.format.DateFormat;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+	final String MP3_folder = "/0 My_English";
+	//boolean isAD = false; 
+	SharedPreferences sharedPref;
+	String currentPrefValue;
+	
+	File sdDir;
+	String path;
+	String fileName;
+	
+	MediaPlayer mediaPlayer; 
+	
+	TextView textViewInfo;
+	TextView textViewTimeRemaining;
+	Button buttonControl;
+	Button buttonExit;
+	SeekBar seekBar;
+
+	Timer mTimer;
+	TimerTask mTimerTask;  
+	boolean isChanging=false;//互斥变量，防止定时器与SeekBar拖动时进度冲突
+	
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+		sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+		
+        buttonExit = (Button) findViewById(R.id.buttonExit);
+        buttonExit.setOnClickListener(new OnClickListener() { //退出
+			@Override
+			public void onClick(View v) {
+				stopPlayerAndTimer();
+				MainActivity.this.finish();
+			}
+		});
+
+        seekBar = (SeekBar)findViewById(R.id.seekBar);
+        seekBar.setOnSeekBarChangeListener(new MySeekbar());  
+
+        
+        buttonControl = (Button) findViewById(R.id.buttonControl);
+        buttonControl.setTextColor(android.graphics.Color.BLUE);
+        buttonControl.setOnClickListener(new OnClickListener() { //控制：暂停、继续、重新开始
+			@Override
+			public void onClick(View v) {
+				if (buttonControl.getText().equals( 
+								getResources().getString(R.string.restart))) {//重新开始
+					playMyEnglish();
+					buttonControl.setText(getResources().getString(R.string.pause));
+					return;
+				}
+				
+				//if (buttonControl.getText().equals( //继续播放
+				//		getResources().getString(R.string.Continue))) {
+				if(!mediaPlayer.isPlaying()){
+					if (mediaPlayer != null) {
+						mediaPlayer.start();
+						buttonControl.setText(getResources().getString(R.string.pause));
+					}
+				}
+				else{// if (buttonControl.getText().equals(  //暂停
+					//	getResources().getString(R.string.pause))) {
+					if (mediaPlayer != null) {
+						mediaPlayer.pause();
+						buttonControl.setText(getResources().getString(R.string.Continue));
+					}
+				}
+			}
+		});
+        
+        textViewInfo = (TextView) findViewById(R.id.textViewInfo);
+        textViewTimeRemaining = (TextView) findViewById(R.id.textViewTimeRemaining);
+        textViewTimeRemaining.setTextColor(android.graphics.Color.BLUE);
+        
+        playMyEnglish();
+        //Log.i("test", "重新开始2");
+    }
+    
+    private void playMyEnglish(){
+    	
+    	if(mediaPlayer!=null && mediaPlayer.isPlaying())
+    		return;
+    	
+    	String date = DateFormat.format("yyMMdd", new Date(System.currentTimeMillis())).toString();
+        
+		currentPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
+		
+        String prefix=currentPrefValue;
+        
+       // if(isAD)
+       // 	prefix = "AD";
+       // else
+       // 	prefix = "SC";
+        
+        sdDir = Environment.getExternalStorageDirectory();//获取SD卡路径
+        path = sdDir.getPath()+MP3_folder+"/";  //MP3存放路径
+        fileName = prefix + date + ".MP3"; //文件名：e.g. AD130911.MP3
+        
+        File f=new File(path + fileName);
+        
+        textViewInfo.setText("目标文件：" + path + fileName);
+        
+        if(f.exists()){
+        	textViewInfo.append("\n文件存在。");
+        	try {
+        		mediaPlayer = new MediaPlayer();
+				mediaPlayer.setDataSource(path + fileName);
+				mediaPlayer.prepare();
+				
+				int duration_milisecond = mediaPlayer.getDuration(); //总时长（毫秒）
+				seekBar.setMax(duration_milisecond);//设置进度条的最大值 
+				//----------定时器记录播放进度---------//     
+                mTimer = new Timer();    
+                mTimerTask = new TimerTask() {    
+                    @Override    
+                    public void run() {     
+                        if(isChanging==true) {   
+                            return;    
+                        }
+                        int current_position_milisecond = mediaPlayer.getCurrentPosition();
+                        //seekBar.setProgress(current_position_milisecond);
+                        
+ 
+
+                        
+                        int time_remaining_second = (mediaPlayer.getDuration() - current_position_milisecond)/1000;
+                        int time_remaining_minute = time_remaining_second/60;
+                        
+                        String sTimeRemaining = "剩余时间：";
+                        if(time_remaining_minute > 0)
+                        	sTimeRemaining += time_remaining_minute + "分";
+                        sTimeRemaining += time_remaining_second%60 + "秒";
+                        
+                        Message msg = new Message();   
+                        msg.what = 1;
+                        Bundle bundle = new Bundle();   
+                        bundle.putInt("current_position_milisecond", current_position_milisecond);   
+                        bundle.putString("sTimeRemaining", sTimeRemaining);   
+                        msg.setData(bundle);   
+                        mHandler.sendMessage(msg);
+                        
+                        //textViewTimeRemaining.setText(sTimeRemaining);
+                    }    
+                };   
+                mTimer.schedule(mTimerTask, 0, 10);  
+
+				mediaPlayer.start();
+				textViewInfo.append("\n正在播放当天文件：" + fileName);
+				
+				int duration_minute = duration_milisecond/1000/60; //总时长：分钟
+				int duration_second = duration_milisecond/1000%60; //总时长：秒
+				
+				
+				textViewInfo.append("\n文件总时长：" + duration_minute + "分" + duration_second + "秒");
+
+				
+				buttonControl.setText(getResources().getString(R.string.pause));
+				buttonControl.setEnabled(true);
+				
+		        mediaPlayer.setOnCompletionListener(new OnCompletionListener(){
+		            @Override
+		            public void onCompletion(MediaPlayer mp) {
+		            	buttonControl.setText(getResources().getString(R.string.restart));
+		            	mTimerTask.cancel();//停止定时器
+		                mp.release();
+		            }
+		         });
+				
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+        else{
+        	textViewInfo.append("\n找不到文件!");
+        	buttonControl.setEnabled(false);
+        }	
+     }
+
+    Handler mHandler = new Handler(){   //用于更新显示剩余时间
+        public void handleMessage(Message msg) {  
+            switch (msg.what) {      
+            case 1:      
+                //setTitle("hear me?"); 
+                int current_position_milisecond = msg.getData().getInt("current_position_milisecond");   
+                String sTimeRemaining = msg.getData().getString("sTimeRemaining");  
+                
+                seekBar.setProgress(current_position_milisecond);
+            	textViewTimeRemaining.setText(sTimeRemaining);
+                break;      
+            }      
+            super.handleMessage(msg);  
+        }  
+    };  
+    
+    
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		stopPlayerAndTimer();
+		super.onDestroy();
+	}
+
+	@Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+	
+	
+    
+    @Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// TODO Auto-generated method stub
+    	switch(item.getItemId()){
+    	case R.id.action_settings:  //启动设置Activity
+    		//open settings
+    		startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+			//MainActivity.this.finish();
+    		
+    		//SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+    		currentPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
+    		//Log.i("Current setting", currentPrefValue);
+    		
+    		return true;
+    	default:
+    		return super.onOptionsItemSelected(item);
+    	}
+	}
+
+
+
+	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+		
+		String newPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
+		
+		if(!newPrefValue.equals(currentPrefValue)){
+			stopPlayerAndTimer();
+			playMyEnglish();//设置已经改变，重新播放
+			//Log.i("test", "重新开始1");
+		}
+		
+	}
+
+
+	private void stopPlayerAndTimer(){
+		if(mTimerTask != null)
+			mTimerTask.cancel();//停止定时器
+		if (mediaPlayer != null)
+			mediaPlayer.release();//停止播放器
+	}
+
+	//进度条处理   
+    class MySeekbar implements OnSeekBarChangeListener {  
+        public void onProgressChanged(SeekBar seekBar, int progress,  
+                boolean fromUser) {  
+        }  
+  
+        public void onStartTrackingTouch(SeekBar seekBar) {  
+            isChanging=true;    
+        }  
+  
+        public void onStopTrackingTouch(SeekBar seekBar) {  
+        	mediaPlayer.seekTo(seekBar.getProgress());
+        	
+        	
+            int time_remaining_second = (mediaPlayer.getDuration() - seekBar.getProgress())/1000;
+            int time_remaining_minute = time_remaining_second/60;
+            
+            String sTimeRemaining = "剩余时间：";
+            if(time_remaining_minute > 0)
+            	sTimeRemaining += time_remaining_minute + "分";
+            sTimeRemaining += time_remaining_second%60 + "秒";
+            textViewTimeRemaining.setText(sTimeRemaining);
+            
+            isChanging=false;    
+        }  
+  
+    }  
+
+}
