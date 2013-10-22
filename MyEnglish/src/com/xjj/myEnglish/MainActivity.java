@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -17,6 +18,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.app.Activity;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -27,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -34,7 +37,15 @@ import android.widget.TextView;
 public class MainActivity extends Activity {
 
 	final String MP3_folder = "/0 My_English";
-	//boolean isAD = false; 
+	//final String TODAY = "today";
+
+	final static Calendar c = Calendar.getInstance();     
+    static int cYear = c.get(Calendar.YEAR);     
+    static int cMonth = c.get(Calendar.MONTH);     
+    static int cDay = c.get(Calendar.DAY_OF_MONTH); 
+    static String date = String.format("%02d%02d%02d", cYear%100, cMonth+1,cDay);
+	//static String date = DateFormat.format("yyMMdd", new Date(System.currentTimeMillis())).toString();//要播放的日期，初始化为当天
+ 
 	SharedPreferences sharedPref;
 	String currentPrefValue;
 	
@@ -114,10 +125,11 @@ public class MainActivity extends Activity {
     
     private void playMyEnglish(){
     	
-    	if(mediaPlayer!=null && mediaPlayer.isPlaying())
-    		return;
+    	//if(mediaPlayer!=null && mediaPlayer.isPlaying())
+    	//	return;
     	
-    	String date = DateFormat.format("yyMMdd", new Date(System.currentTimeMillis())).toString();
+    	//if(date==null)//如果没有指定日期，则播放当天的文件
+    	//	date = DateFormat.format("yyMMdd", new Date(System.currentTimeMillis())).toString();
         
 		currentPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
 		
@@ -133,14 +145,20 @@ public class MainActivity extends Activity {
         fileName = prefix + date + ".MP3"; //文件名：e.g. AD130911.MP3
         
         File f=new File(path + fileName);
-        
-        textViewInfo.setText("目标文件：" + path + fileName);
+
+                
+        //textViewInfo.setText("目标文件：" + path + fileName);
+        String today = String.format("%d年%d月%d日", cYear, cMonth+1,cDay);;
+        textViewInfo.setText("今天是：" + today);
+        textViewInfo.append("\n目标文件：" + fileName);
         
         if(f.exists()){
-        	textViewInfo.append("\n文件存在。");
+        	//textViewInfo.append("\n文件存在。");
         	try {
-        		mediaPlayer = new MediaPlayer();
-				mediaPlayer.setDataSource(path + fileName);
+        		//if(mediaPlayer==null)
+        			mediaPlayer = new MediaPlayer();
+				
+        		mediaPlayer.setDataSource(path + fileName);
 				mediaPlayer.prepare();
 				
 				int duration_milisecond = mediaPlayer.getDuration(); //总时长（毫秒）
@@ -181,7 +199,7 @@ public class MainActivity extends Activity {
                 mTimer.schedule(mTimerTask, 0, 10);  
 
 				mediaPlayer.start();
-				textViewInfo.append("\n正在播放当天文件：" + fileName);
+				textViewInfo.append("\n正在播放文件：" + fileName);
 				
 				int duration_minute = duration_milisecond/1000/60; //总时长：分钟
 				int duration_second = duration_milisecond/1000%60; //总时长：秒
@@ -210,6 +228,7 @@ public class MainActivity extends Activity {
         }
         else{
         	textViewInfo.append("\n找不到文件!");
+        	textViewTimeRemaining.setText("剩余时间：0");
         	buttonControl.setEnabled(false);
         }	
      }
@@ -244,8 +263,6 @@ public class MainActivity extends Activity {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
-	
-	
     
     @Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -261,12 +278,35 @@ public class MainActivity extends Activity {
     		//Log.i("Current setting", currentPrefValue);
     		
     		return true;
+    	
+    	case R.id.action_specify_date:	//指定日期播放
+  
+    		
+            new DatePickerDialog(this,     //指定日期对话框
+                    mDateSetListener,     
+                    cYear, cMonth, cDay).show();
+    		
+    		return true;
+    		
     	default:
     		return super.onOptionsItemSelected(item);
     	}
 	}
 
-
+    private DatePickerDialog.OnDateSetListener mDateSetListener =     
+            new DatePickerDialog.OnDateSetListener() {     
+        
+                public void onDateSet(DatePicker view, int year,      
+                                      int monthOfYear, int dayOfMonth) {
+                	
+                	date = String.format("%02d%02d%02d", year%100, monthOfYear + 1,dayOfMonth);//设置要播放的某天：yymmdd
+                	
+                	stopPlayerAndTimer();
+                	playMyEnglish();
+                	//Log.d("DatePickerDialog Testing", s);
+   
+                }     
+        }; 
 
 	@Override
 	protected void onResume() {
