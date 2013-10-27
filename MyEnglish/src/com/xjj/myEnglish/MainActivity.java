@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
  
 	SharedPreferences sharedPref;
 	String currentPrefValue;
+	Boolean showTimeRemaining;
 	
 	File sdDir;
 	String path;
@@ -183,26 +184,26 @@ public class MainActivity extends Activity {
                         int current_position_milisecond = mediaPlayer.getCurrentPosition();
                         //seekBar.setProgress(current_position_milisecond);//移到Handler里面处理
                                                 
-                        int time_remaining_second = (mediaPlayer.getDuration() - current_position_milisecond)/1000;
-                        int time_remaining_minute = time_remaining_second/60;
+//                        int time_remaining_second = (mediaPlayer.getDuration() - current_position_milisecond)/1000;
+//                        int time_remaining_minute = time_remaining_second/60;
                         
-                        String sTimeRemaining = "剩余时间：";
-                        if(time_remaining_minute > 0)
-                        	sTimeRemaining += time_remaining_minute + "分";
-                        sTimeRemaining += time_remaining_second%60 + "秒";
+//                        String sTimeRemaining = "剩余时间：";
+//                        if(time_remaining_minute > 0)
+//                        	sTimeRemaining += time_remaining_minute + "分";
+//                        sTimeRemaining += time_remaining_second%60 + "秒";
                         
                         Message msg = new Message();   
                         msg.what = 1;
                         Bundle bundle = new Bundle();   
                         bundle.putInt("current_position_milisecond", current_position_milisecond);   
-                        bundle.putString("sTimeRemaining", sTimeRemaining);   
+//                        bundle.putString("sTimeRemaining", sTimeRemaining);   
                         msg.setData(bundle);   
                         mHandler.sendMessage(msg);
                         
                         //textViewTimeRemaining.setText(sTimeRemaining);
                     }    
                 };   
-                mTimer.schedule(mTimerTask, 0, 10);  
+                mTimer.schedule(mTimerTask, 0, 100);  
 
                 //设置从哪里开始播
     			if(initProgress>0){
@@ -239,7 +240,7 @@ public class MainActivity extends Activity {
         }
         else{
         	textViewInfo.append("\n找不到文件!");
-        	textViewTimeRemaining.setText("剩余时间：0");
+        	textViewTimeRemaining.setText("剩余时间/已经播放时间：0");
         	buttonControl.setEnabled(false);
         }	
      }
@@ -250,16 +251,43 @@ public class MainActivity extends Activity {
             case 1:      
                 //setTitle("hear me?"); 
                 int current_position_milisecond = msg.getData().getInt("current_position_milisecond");   
-                String sTimeRemaining = msg.getData().getString("sTimeRemaining");  
+//                String sTimeRemaining = msg.getData().getString("sTimeRemaining");  
                 
                 seekBar.setProgress(current_position_milisecond);
-            	textViewTimeRemaining.setText(sTimeRemaining);
+                setTextViewTimeRemaining(current_position_milisecond);
+                
+//            	textViewTimeRemaining.setText(sTimeRemaining);
                 break;      
             }      
             super.handleMessage(msg);  
         }  
     };  
     
+    //显示剩余时间或已经播放时间：
+    void setTextViewTimeRemaining(int current_position_milisecond){
+    	showTimeRemaining = sharedPref.getBoolean("showTimeRemaining", true);
+    	
+		if (showTimeRemaining == true) {
+			int time_remaining_second = (seekBar.getMax()-current_position_milisecond) / 1000;
+			int time_remaining_minute = time_remaining_second / 60;
+
+			String sTimeRemaining = "剩余时间：";
+			if (time_remaining_minute > 0)
+				sTimeRemaining += time_remaining_minute + "分";
+			sTimeRemaining += time_remaining_second % 60 + "秒";
+			textViewTimeRemaining.setText(sTimeRemaining);
+		}
+		else{
+			int time_elapsed_second = current_position_milisecond/1000;
+			int time_elapsed_minute = time_elapsed_second / 60;
+			
+			String sTimeElapsed = "已经播放时间：";
+			if (time_elapsed_minute > 0)
+				sTimeElapsed += time_elapsed_minute + "分";
+			sTimeElapsed += time_elapsed_second % 60 + "秒";
+			textViewTimeRemaining.setText(sTimeElapsed);
+		}
+    }
     
 	@Override
 	protected void onDestroy() {
@@ -363,16 +391,31 @@ public class MainActivity extends Activity {
         public void onStopTrackingTouch(SeekBar seekBar) {  
         	mediaPlayer.seekTo(seekBar.getProgress());
         	
+        	setTextViewTimeRemaining(seekBar.getProgress());
         	
-            int time_remaining_second = (mediaPlayer.getDuration() - seekBar.getProgress())/1000;
-            int time_remaining_minute = time_remaining_second/60;
-            
-            String sTimeRemaining = "剩余时间：";
-            if(time_remaining_minute > 0)
-            	sTimeRemaining += time_remaining_minute + "分";
-            sTimeRemaining += time_remaining_second%60 + "秒";
-            textViewTimeRemaining.setText(sTimeRemaining);
-            
+        	showTimeRemaining = sharedPref.getBoolean("showTimeRemaining", true);
+        	
+//			if (showTimeRemaining == true) {
+//				int time_remaining_second = (mediaPlayer.getDuration() - seekBar.getProgress()) / 1000;
+//				int time_remaining_minute = time_remaining_second / 60;
+//
+//				String sTimeRemaining = "剩余时间：";
+//				if (time_remaining_minute > 0)
+//					sTimeRemaining += time_remaining_minute + "分";
+//				sTimeRemaining += time_remaining_second % 60 + "秒";
+//				textViewTimeRemaining.setText(sTimeRemaining);
+//			}
+//			else{
+//				int time_elapsed_second = seekBar.getProgress()/1000;
+//				int time_elapsed_minute = time_elapsed_second / 60;
+//				
+//				String sTimeElapsed = "已经播放时间：";
+//				if (time_elapsed_minute > 0)
+//					sTimeElapsed += time_elapsed_minute + "分";
+//				sTimeElapsed += time_elapsed_second % 60 + "秒";
+//				textViewTimeRemaining.setText(sTimeElapsed);
+//			}
+
             isChanging=false;    
         }  
   
