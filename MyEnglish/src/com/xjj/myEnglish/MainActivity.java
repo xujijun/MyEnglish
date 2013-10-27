@@ -92,7 +92,7 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				if (buttonControl.getText().equals( 
 								getResources().getString(R.string.restart))) {//重新开始
-					playMyEnglish();
+					playMyEnglish(0);
 					buttonControl.setText(getResources().getString(R.string.pause));
 					return;
 				}
@@ -119,11 +119,17 @@ public class MainActivity extends Activity {
         textViewTimeRemaining = (TextView) findViewById(R.id.textViewTimeRemaining);
         textViewTimeRemaining.setTextColor(android.graphics.Color.BLUE);
         
-        playMyEnglish();
+		//读取保存的进度，如果日期匹配，就从该进度开始播放：
+		String savedDate = sharedPref.getString("Date", "");
+		int savedProgress = 0;
+		if(date.equals(savedDate)){
+			savedProgress = sharedPref.getInt("Progress", 0);
+		}
+        playMyEnglish(savedProgress);
         //Log.i("test", "重新开始2");
     }
     
-    private void playMyEnglish(){
+    private void playMyEnglish(int initProgress){//initProgress：从哪里开始播
     	
     	//if(mediaPlayer!=null && mediaPlayer.isPlaying())
     	//	return;
@@ -163,20 +169,20 @@ public class MainActivity extends Activity {
 				
 				int duration_milisecond = mediaPlayer.getDuration(); //总时长（毫秒）
 				seekBar.setMax(duration_milisecond);//设置进度条的最大值 
+				
+
+				
 				//----------定时器记录播放进度---------//     
                 mTimer = new Timer();    
                 mTimerTask = new TimerTask() {    
                     @Override    
                     public void run() {     
-                        if(isChanging==true) {   
+                        if(isChanging==true) {   //正在被拖动，暂时不要更新进度条
                             return;    
                         }
                         int current_position_milisecond = mediaPlayer.getCurrentPosition();
-                        //seekBar.setProgress(current_position_milisecond);
-                        
- 
-
-                        
+                        //seekBar.setProgress(current_position_milisecond);//移到Handler里面处理
+                                                
                         int time_remaining_second = (mediaPlayer.getDuration() - current_position_milisecond)/1000;
                         int time_remaining_minute = time_remaining_second/60;
                         
@@ -198,13 +204,18 @@ public class MainActivity extends Activity {
                 };   
                 mTimer.schedule(mTimerTask, 0, 10);  
 
+                //设置从哪里开始播
+    			if(initProgress>0){
+    				mediaPlayer.seekTo(initProgress);
+    				seekBar.setProgress(initProgress);
+    			}
 				mediaPlayer.start();
+				
 				textViewInfo.append("\n正在播放文件：" + fileName);
 				
 				int duration_minute = duration_milisecond/1000/60; //总时长：分钟
 				int duration_second = duration_milisecond/1000%60; //总时长：秒
-				
-				
+								
 				textViewInfo.append("\n文件总时长：" + duration_minute + "分" + duration_second + "秒");
 
 				
@@ -253,6 +264,14 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
+		
+		//保存播放进度和日期：
+		SharedPreferences.Editor editor = sharedPref.edit();
+		//editor.putInt("Progress", mediaPlayer.getCurrentPosition());
+		editor.putInt("Progress", seekBar.getProgress());
+		editor.putString("Date", date);
+		editor.commit();
+		
 		stopPlayerAndTimer();
 		super.onDestroy();
 	}
@@ -302,7 +321,7 @@ public class MainActivity extends Activity {
                 	date = String.format("%02d%02d%02d", year%100, monthOfYear + 1,dayOfMonth);//设置要播放的某天：yymmdd
                 	
                 	stopPlayerAndTimer();
-                	playMyEnglish();
+                	playMyEnglish(0);
                 	//Log.d("DatePickerDialog Testing", s);
    
                 }     
@@ -317,7 +336,7 @@ public class MainActivity extends Activity {
 		
 		if(!newPrefValue.equals(currentPrefValue)){
 			stopPlayerAndTimer();
-			playMyEnglish();//设置已经改变，重新播放
+			playMyEnglish(0);//设置已经改变，重新播放
 			//Log.i("test", "重新开始1");
 		}
 		
