@@ -111,6 +111,7 @@ public class MainActivity extends Activity {
 					if (mediaPlayer != null) {
 						mediaPlayer.pause();
 						buttonControl.setText(getResources().getString(R.string.Continue));
+						saveProgress();		//保存播放进度和日期
 					}
 				}
 			}
@@ -126,11 +127,30 @@ public class MainActivity extends Activity {
 		if(date.equals(savedDate)){
 			savedProgress = sharedPref.getInt("Progress", 0);
 		}
-        playMyEnglish(savedProgress);
+		
+		//要跳过的片头时长
+		int skippedMilisecond =0;
+		if (sharedPref.getBoolean("skipTheOpenning", false)) {//如果要跳过片头
+			skippedMilisecond = sharedPref.getInt("skippedSecond", 0) * 1000;//要跳过片头的秒数
+			//Log.v("跳过片头（毫秒）",String.valueOf(skippedMilisecond));
+		}
+
+        //playMyEnglish(savedProgress);
+		playMyEnglish(Math.max(savedProgress, skippedMilisecond));
         //Log.i("test", "重新开始2");
     }
     
-    private void playMyEnglish(int initProgress){//initProgress：从哪里开始播
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		// TODO Auto-generated method stub
+		super.onSaveInstanceState(outState);
+		saveProgress();		//保存播放进度和日期
+	}
+
+
+
+	private void playMyEnglish(int initProgress){//initProgress：从哪里开始播
     	
     	//if(mediaPlayer!=null && mediaPlayer.isPlaying())
     	//	return;
@@ -289,17 +309,19 @@ public class MainActivity extends Activity {
 		}
     }
     
-	@Override
-	protected void onDestroy() {
-		// TODO Auto-generated method stub
-		
-		//保存播放进度和日期：
+    void saveProgress(){//保存播放进度和日期
 		SharedPreferences.Editor editor = sharedPref.edit();
 		//editor.putInt("Progress", mediaPlayer.getCurrentPosition());
 		editor.putInt("Progress", seekBar.getProgress());
 		editor.putString("Date", date);
 		editor.commit();
+    }
+    
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
 		
+		saveProgress();		//保存播放进度和日期
 		stopPlayerAndTimer();
 		super.onDestroy();
 	}

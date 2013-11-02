@@ -22,4 +22,21 @@
         android:defaultValue="true">  
     </CheckBoxPreference> 
 
+<PreferenceCategory android:title="是否跳过片头" >
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="skipTheOpenning"
+        android:summaryOff="不用了，从头开始播放！"
+        android:summaryOn="是的，请跳过片头！（请选择片头时长）"
+        android:title="跳过片头?" >
+    </CheckBoxPreference>
+
+    <com.xjj.myEnglish.NumberPickerPreference
+        android:key="skippedSecond"
+        android:defaultValue="0"
+        android:dependency="skipTheOpenning"
+        android:dialogMessage="请选择片头时长（秒）："
+        android:title="选择要跳过的片头时长" />
+</PreferenceCategory>
+    
 </PreferenceScreen>

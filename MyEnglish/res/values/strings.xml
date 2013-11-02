@@ -12,5 +12,6 @@
     <string name="pref_Type">类型选择</string>
     <string name="pref_type_default">AD</string>
     <string name="time_remaining">剩余时间</string>
-
+    <string name="OK">确定</string>
+    <string name="Cancel">取消</string>
 </resources>
