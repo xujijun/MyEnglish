@@ -52,15 +52,36 @@
             android:text="@string/Exit" />
 
         <Button
+            android:id="@+id/buttonFastBackward"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/buttonExit"
+            android:layout_alignBottom="@+id/buttonExit"
+            android:layout_marginLeft="8dp"
+            android:layout_toRightOf="@+id/buttonExit"
+            android:text="@string/fast_backward" />
+        
+        <Button
             android:id="@+id/buttonControl"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignBaseline="@+id/buttonExit"
             android:layout_alignBottom="@+id/buttonExit"
-            android:layout_marginLeft="50dp"
-            android:layout_toRightOf="@+id/buttonExit"
+            android:layout_marginLeft="8dp"
+            android:layout_toRightOf="@+id/buttonFastBackward"
             android:text="@string/pause" />
 
+        
+        <Button
+            android:id="@+id/buttonFastForeward"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/buttonExit"
+            android:layout_alignBottom="@+id/buttonExit"
+            android:layout_marginLeft="8dp"
+            android:layout_toRightOf="@+id/buttonControl"
+            android:text="@string/fast_foreward" />
+        
     </RelativeLayout>
 
 </RelativeLayout>

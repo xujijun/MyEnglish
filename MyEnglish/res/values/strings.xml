@@ -7,6 +7,8 @@
     <string name="pause">暂停</string>
     <string name="play">播放</string>
     <string name="Continue">继续</string>
+    <string name="fast_backward">&lt;&lt;10s</string>
+    <string name="fast_foreward">&gt;&gt;10s</string>
     <string name="Exit">退出</string>
     <string name="restart">重新开始</string>
     <string name="pref_Type">类型选择</string>

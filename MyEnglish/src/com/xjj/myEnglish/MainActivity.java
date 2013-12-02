@@ -22,6 +22,7 @@ import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.text.Html;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
@@ -45,6 +46,9 @@ public class MainActivity extends Activity {
     static int cDay = c.get(Calendar.DAY_OF_MONTH); 
     static String date = String.format("%02d%02d%02d", cYear%100, cMonth+1,cDay);
 	//static String date = DateFormat.format("yyMMdd", new Date(System.currentTimeMillis())).toString();//要播放的日期，初始化为当天
+    
+	//要跳过的片头时长（毫秒）
+	int skippedMilisecond =0;
  
 	SharedPreferences sharedPref;
 	String currentPrefValue;
@@ -60,6 +64,8 @@ public class MainActivity extends Activity {
 	TextView textViewTimeRemaining;
 	Button buttonControl;
 	Button buttonExit;
+	Button buttonFastForeward;
+	Button buttonFastBackward;
 	SeekBar seekBar;
 
 	Timer mTimer;
@@ -85,6 +91,21 @@ public class MainActivity extends Activity {
         seekBar = (SeekBar)findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(new MySeekbar());  
 
+        buttonFastForeward = (Button) findViewById(R.id.buttonFastForeward);
+        buttonFastForeward.setOnClickListener(new OnClickListener() { //快进5秒
+			@Override
+			public void onClick(View v) {
+				mediaPlayer.seekTo(mediaPlayer.getCurrentPosition()+10000);
+			}
+		});
+        
+        buttonFastBackward = (Button) findViewById(R.id.buttonFastBackward);
+        buttonFastBackward.setOnClickListener(new OnClickListener() { //快退5秒
+			@Override
+			public void onClick(View v) {
+				mediaPlayer.seekTo(mediaPlayer.getCurrentPosition()-10000);
+			}
+		});
         
         buttonControl = (Button) findViewById(R.id.buttonControl);
         buttonControl.setTextColor(android.graphics.Color.BLUE);
@@ -93,7 +114,7 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				if (buttonControl.getText().equals( 
 								getResources().getString(R.string.restart))) {//重新开始
-					playMyEnglish(0);
+					playMyEnglish(skippedMilisecond);
 					buttonControl.setText(getResources().getString(R.string.pause));
 					return;
 				}
@@ -128,8 +149,7 @@ public class MainActivity extends Activity {
 			savedProgress = sharedPref.getInt("Progress", 0);
 		}
 		
-		//要跳过的片头时长
-		int skippedMilisecond =0;
+
 		if (sharedPref.getBoolean("skipTheOpenning", false)) {//如果要跳过片头
 			skippedMilisecond = sharedPref.getInt("skippedSecond", 0) * 1000;//要跳过片头的秒数
 			//Log.v("跳过片头（毫秒）",String.valueOf(skippedMilisecond));
@@ -232,7 +252,9 @@ public class MainActivity extends Activity {
     			}
 				mediaPlayer.start();
 				
-				textViewInfo.append("\n正在播放文件：" + fileName);
+				//textViewInfo.append("\n正在播放文件：" + fileName);
+				String html = "<br><font color=\"#00bbaa\">正在播放文件：" + fileName + "</font>";
+				textViewInfo.append(Html.fromHtml(html));
 				
 				int duration_minute = duration_milisecond/1000/60; //总时长：分钟
 				int duration_second = duration_milisecond/1000%60; //总时长：秒
@@ -351,9 +373,11 @@ public class MainActivity extends Activity {
     	case R.id.action_specify_date:	//指定日期播放
   
     		
-            new DatePickerDialog(this,     //指定日期对话框
+            DatePickerDialog dpd = new DatePickerDialog(this,     //指定日期对话框
                     mDateSetListener,     
-                    cYear, cMonth, cDay).show();
+                    cYear, cMonth, cDay);
+            dpd.setCancelable(true);
+            dpd.show();
     		
     		return true;
     		
@@ -371,7 +395,7 @@ public class MainActivity extends Activity {
                 	date = String.format("%02d%02d%02d", year%100, monthOfYear + 1,dayOfMonth);//设置要播放的某天：yymmdd
                 	
                 	stopPlayerAndTimer();
-                	playMyEnglish(0);
+                	playMyEnglish(skippedMilisecond);
                 	//Log.d("DatePickerDialog Testing", s);
    
                 }     
@@ -410,12 +434,12 @@ public class MainActivity extends Activity {
             isChanging=true;    
         }  
   
-        public void onStopTrackingTouch(SeekBar seekBar) {  
-        	mediaPlayer.seekTo(seekBar.getProgress());
-        	
-        	setTextViewTimeRemaining(seekBar.getProgress());
-        	
-        	showTimeRemaining = sharedPref.getBoolean("showTimeRemaining", true);
+        public void onStopTrackingTouch(SeekBar seekBar) { //SeekBar拖动结束
+        	if (!buttonControl.getText().equals(getResources().getString(R.string.restart))){//如果是已经播放完，则不执行seekTo
+        		mediaPlayer.seekTo(seekBar.getProgress());
+        		setTextViewTimeRemaining(seekBar.getProgress());
+        	}
+        	//showTimeRemaining = sharedPref.getBoolean("showTimeRemaining", true);
         	
 //			if (showTimeRemaining == true) {
 //				int time_remaining_second = (mediaPlayer.getDuration() - seekBar.getProgress()) / 1000;
