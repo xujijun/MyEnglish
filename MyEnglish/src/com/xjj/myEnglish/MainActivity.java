@@ -375,6 +375,7 @@ public class MainActivity extends Activity {
     		
     		break;
     		
+    	//介绍和帮助	
     	case R.id.action_help:
     		String content = ""; 
             try { 
