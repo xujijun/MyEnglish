@@ -278,7 +278,8 @@ public class MainActivity extends Activity {
 			}
         }
         else{
-        	textViewInfo.append("\n找不到文件!");
+        	String fileNotFound = "<br><font color=\"red\">找不到文件！请查看帮助、更改设置、或联系作者。</font>";
+			textViewInfo.append(Html.fromHtml(fileNotFound));
         	textViewTimeRemaining.setText("剩余时间/已经播放时间：0");
         	buttonControl.setEnabled(false);
         }	
