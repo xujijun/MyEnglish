@@ -4,9 +4,16 @@
         android:id="@+id/action_specify_date"
         android:showAsAction="ifRoom"
         android:title="指定日期播放"/>
+    
+    <item
+        android:id="@+id/action_help"
+        android:showAsAction="never"
+        android:title="功能介绍和帮助"/>
+    
     <item
         android:id="@+id/action_settings"
         android:showAsAction="never"
         android:title="@string/action_settings"/>
+    
 
 </menu>

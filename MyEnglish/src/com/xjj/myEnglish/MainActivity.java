@@ -2,14 +2,19 @@ package com.xjj.myEnglish;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Date;
-import java.text.SimpleDateFormat;
+import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.xjj.myEnglish.R;
+import org.apache.http.util.EncodingUtils;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.app.DatePickerDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
@@ -17,14 +22,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.app.Activity;
-import android.app.DatePickerDialog;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.text.Html;
-import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -163,14 +161,13 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
-		// TODO Auto-generated method stub
 		super.onSaveInstanceState(outState);
 		saveProgress();		//保存播放进度和日期
 	}
 
 
 
-	private void playMyEnglish(int initProgress){//initProgress：从哪里开始播
+	private void playMyEnglish(int initProgress){//initProgress：从哪里开始播，毫秒
     	
     	//if(mediaPlayer!=null && mediaPlayer.isPlaying())
     	//	return;
@@ -246,7 +243,7 @@ public class MainActivity extends Activity {
                 mTimer.schedule(mTimerTask, 0, 100);  
 
                 //设置从哪里开始播
-    			if(initProgress>0){
+    			if(initProgress>0 && initProgress<duration_milisecond){
     				mediaPlayer.seekTo(initProgress);
     				seekBar.setProgress(initProgress);
     			}
@@ -357,33 +354,54 @@ public class MainActivity extends Activity {
     
     @Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		// TODO Auto-generated method stub
     	switch(item.getItemId()){
     	case R.id.action_settings:  //启动设置Activity
     		//open settings
     		startActivity(new Intent(MainActivity.this, SettingsActivity.class));
 			//MainActivity.this.finish();
-    		
     		//SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
     		currentPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
     		//Log.i("Current setting", currentPrefValue);
     		
-    		return true;
+    		break;
     	
     	case R.id.action_specify_date:	//指定日期播放
-  
-    		
             DatePickerDialog dpd = new DatePickerDialog(this,     //指定日期对话框
                     mDateSetListener,     
                     cYear, cMonth, cDay);
             dpd.setCancelable(true);
             dpd.show();
     		
-    		return true;
+    		break;
+    		
+    	case R.id.action_help:
+    		String content = ""; 
+            try { 
+                InputStream in = getResources().openRawResource(R.raw.help); 
+                //获取文件的字节数 
+                int lenght = in.available(); 
+                //创建byte数组 
+                byte[] buffer = new byte[lenght]; 
+                //将文件中的数据读到byte数组中 
+                in.read(buffer); 
+                content = EncodingUtils.getString(buffer, "UTF-8"); 
+            } catch (Exception e) { 
+                e.printStackTrace(); 
+            } 
+
+            AlertDialog.Builder builder = new Builder(this);
+            builder.setMessage(content);
+            builder.setTitle("介绍和帮助");
+            builder.create().show();
+
+    		
+    		break;
     		
     	default:
     		return super.onOptionsItemSelected(item);
     	}
+    	
+    	return true;
 	}
 
     private DatePickerDialog.OnDateSetListener mDateSetListener =     
