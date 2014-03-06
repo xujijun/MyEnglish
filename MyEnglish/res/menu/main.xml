@@ -14,6 +14,10 @@
         android:id="@+id/action_settings"
         android:showAsAction="never"
         android:title="@string/action_settings"/>
-    
+
+    <item
+        android:id="@+id/action_change_folder"
+        android:showAsAction="never"
+        android:title="更改播放路径"/>
 
 </menu>

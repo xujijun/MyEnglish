@@ -2,17 +2,15 @@ package com.xjj.myEnglish;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import org.apache.http.util.EncodingUtils;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.DatePickerDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
@@ -32,10 +30,14 @@ import android.widget.DatePicker;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.xjj.myEnglish.util.Util;
 
 public class MainActivity extends Activity {
 
-	final String MP3_folder = "/0 My_English";
+	final String default_MP3_folder = "/0 My_English";
+	final static int REQUEST_CODE = 1;
 	//final String TODAY = "today";
 
 	final static Calendar c = Calendar.getInstance();     
@@ -52,7 +54,7 @@ public class MainActivity extends Activity {
 	String currentPrefValue;
 	Boolean showTimeRemaining;
 	
-	File sdDir;
+	String sdDir;
 	String path;
 	String fileName;
 	
@@ -76,6 +78,26 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
 		sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+		
+		//如果是第一次使用，显示介绍和设置信息
+		if(sharedPref.getBoolean("isFirst", true)){
+            AlertDialog.Builder builder = new Builder(this);
+            builder.setMessage(Util.readRawTxtFile(this, R.raw.help));
+            builder.setTitle("第一次使用，请先看介绍：");
+            builder.setPositiveButton("知道了！", null);
+            builder.setNegativeButton("去设置", new DialogInterface.OnClickListener(){
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+		    		startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+				}
+            	
+            });
+            builder.create().show();
+            
+			SharedPreferences.Editor editor = sharedPref.edit();
+			editor.putBoolean("isFirst", false);
+			editor.commit();
+		}
 		
         buttonExit = (Button) findViewById(R.id.buttonExit);
         buttonExit.setOnClickListener(new OnClickListener() { //退出
@@ -183,9 +205,12 @@ public class MainActivity extends Activity {
        // 	prefix = "AD";
        // else
        // 	prefix = "SC";
+        sdDir = Environment.getExternalStorageDirectory().getPath();//获取SD卡路径
+        String default_obs_folder = sdDir + default_MP3_folder;
         
-        sdDir = Environment.getExternalStorageDirectory();//获取SD卡路径
-        path = sdDir.getPath()+MP3_folder+"/";  //MP3存放路径
+        String MP3_folder = sharedPref.getString("mp3_folder", default_obs_folder) ;
+        path = MP3_folder +"/";  //MP3存放路径
+        
         fileName = prefix + date + ".MP3"; //文件名：e.g. AD130911.MP3
         
         File f=new File(path + fileName);
@@ -240,7 +265,7 @@ public class MainActivity extends Activity {
                         //textViewTimeRemaining.setText(sTimeRemaining);
                     }    
                 };   
-                mTimer.schedule(mTimerTask, 0, 100);  
+                mTimer.schedule(mTimerTask, 0, 300);  
 
                 //设置从哪里开始播
     			if(initProgress>0 && initProgress<duration_milisecond){
@@ -270,10 +295,7 @@ public class MainActivity extends Activity {
 		                mp.release();
 		            }
 		         });
-				
-				
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
         }
@@ -339,8 +361,6 @@ public class MainActivity extends Activity {
     
 	@Override
 	protected void onDestroy() {
-		// TODO Auto-generated method stub
-		
 		saveProgress();		//保存播放进度和日期
 		stopPlayerAndTimer();
 		super.onDestroy();
@@ -353,60 +373,73 @@ public class MainActivity extends Activity {
         return true;
     }
     
-    @Override
+	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-    	switch(item.getItemId()){
-    	case R.id.action_settings:  //启动设置Activity
-    		//open settings
-    		startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-			//MainActivity.this.finish();
-    		//SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-    		currentPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
-    		//Log.i("Current setting", currentPrefValue);
-    		
-    		break;
-    	
-    	case R.id.action_specify_date:	//指定日期播放
-            DatePickerDialog dpd = new DatePickerDialog(this,     //指定日期对话框
-                    mDateSetListener,     
-                    cYear, cMonth, cDay);
-            dpd.setCancelable(true);
-            dpd.show();
-    		
-    		break;
-    		
-    	//介绍和帮助	
-    	case R.id.action_help:
-    		String content = ""; 
-            try { 
-                InputStream in = getResources().openRawResource(R.raw.help); 
-                //获取文件的字节数 
-                int lenght = in.available(); 
-                //创建byte数组 
-                byte[] buffer = new byte[lenght]; 
-                //将文件中的数据读到byte数组中 
-                in.read(buffer); 
-                content = EncodingUtils.getString(buffer, "UTF-8"); 
-            } catch (Exception e) { 
-                e.printStackTrace(); 
-            } 
+		switch (item.getItemId()) {
+		case R.id.action_settings: // 启动设置Activity
+			// open settings
+			startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+			// MainActivity.this.finish();
+			// SharedPreferences sharedPref =
+			// this.getPreferences(Context.MODE_PRIVATE);
+			currentPrefValue = sharedPref.getString("prefix", "AD"); // 获取系统设置中的值
+			// Log.i("Current setting", currentPrefValue);
 
-            AlertDialog.Builder builder = new Builder(this);
-            builder.setMessage(content);
-            builder.setTitle("介绍和帮助");
-            builder.create().show();
+			break;
 
-    		
-    		break;
-    		
-    	default:
-    		return super.onOptionsItemSelected(item);
-    	}
-    	
-    	return true;
+		case R.id.action_specify_date: // 指定日期播放
+			DatePickerDialog dpd = new DatePickerDialog(this, // 指定日期对话框
+					mDateSetListener, cYear, cMonth, cDay);
+			dpd.setCancelable(true);
+			dpd.show();
+
+			break;
+
+		case R.id.action_help: // 介绍和帮助
+			AlertDialog.Builder builder = new Builder(this);
+			builder.setMessage(Util.readRawTxtFile(this, R.raw.help));
+			builder.setTitle("介绍和帮助");
+			builder.setPositiveButton("知道了！", null);
+			builder.create().show();
+			break;
+
+		case R.id.action_change_folder: // 指定播放路径
+			Intent intent = new Intent(MainActivity.this, SelectFolderActivity.class);
+			startActivityForResult(intent, REQUEST_CODE);
+
+			break;
+
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+
+		return true;
 	}
 
-    private DatePickerDialog.OnDateSetListener mDateSetListener =     
+
+	//选择文件夹的返回结果
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (resultCode == SelectFolderActivity.RESULT_CODE) {
+			Bundle bundle = null;
+			if (data != null && (bundle = data.getExtras()) != null) {
+				String new_path = bundle.getString("path");
+				String current_path = sharedPref.getString("mp3_folder", sdDir + default_MP3_folder);
+				
+				if(!new_path.equals(current_path)){//文件夹已更改
+					SharedPreferences.Editor editor = sharedPref.edit();
+					editor.putString("mp3_folder", new_path);
+					editor.commit();
+					
+					stopPlayerAndTimer();//重新开始播放
+					playMyEnglish(skippedMilisecond);
+				}
+				Toast.makeText(this, "更改后的文件夹：" + new_path, Toast.LENGTH_LONG).show();
+			}
+		}
+	}
+
+	private DatePickerDialog.OnDateSetListener mDateSetListener =     
             new DatePickerDialog.OnDateSetListener() {     
         
                 public void onDateSet(DatePicker view, int year,      
@@ -423,14 +456,13 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		super.onResume();
 		
 		String newPrefValue = sharedPref.getString("prefix","AD"); //获取系统设置中的值
 		
 		if(!newPrefValue.equals(currentPrefValue)){
 			stopPlayerAndTimer();
-			playMyEnglish(0);//设置已经改变，重新播放
+			playMyEnglish(skippedMilisecond);//设置已经改变，重新播放
 			//Log.i("test", "重新开始1");
 		}
 		
